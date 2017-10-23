@@ -48,7 +48,8 @@ public:
                      Reader::AbstractProcessor& processor,
                      const QString& separator,
                      const QString& textDelimiter,
-                     QTextCodec* codec);
+                     QTextCodec* codec,
+                     bool stripSpaces);
 
 
 private:
@@ -59,7 +60,8 @@ private:
     static QStringList splitElements(const QString& line,
                                      const QString& separator,
                                      const QString& textDelimiter,
-                                     ElementInfo& elemInfo);
+                                     ElementInfo& elemInfo,
+                                     bool stripSpaces);
 
     // Try to find end position of first or middle element
     static int findMiddleElementPositioin(const QString& str,
@@ -75,7 +77,8 @@ private:
 
     // Remove extra symbols (spaces, text delimeters...)
     static void removeExtraSymbols(QStringList& elements,
-                                   const QString& textDelimiter);
+                                   const QString& textDelimiter,
+                                   bool stripSpaces);
 };
 
 // Function that really reads csv-data and transfer it's data to
@@ -86,13 +89,15 @@ private:
 // - separator - string or character that separate values in a row
 // - textDelimiter - string or character that enclose row elements
 // - codec - pointer to codec object that would be used for file reading
+// - stripSpaces - when true, will strip leading and trailing spaces from elements
 // @output:
 // - bool - result of read operation
 bool ReaderPrivate::read(QIODevice& ioDevice,
                          Reader::AbstractProcessor& processor,
                          const QString& separator,
                          const QString& textDelimiter,
-                         QTextCodec* codec)
+                         QTextCodec* codec,
+                         bool stripSpaces)
 {
     if ( false == checkParams(separator) )
     {
@@ -121,7 +126,7 @@ bool ReaderPrivate::read(QIODevice& ioDevice,
         QString line = stream.readLine();
         processor.preProcessRawLine(line);
         QStringList elements = ReaderPrivate::splitElements(
-                  line, separator, textDelimiter, elemInfo);
+                  line, separator, textDelimiter, elemInfo, stripSpaces);
         if (elemInfo.isEnded)
         {
             // Current row ends on this line. Check if these elements are
@@ -197,12 +202,14 @@ bool ReaderPrivate::checkParams(const QString& separator)
 // - line - string with data
 // - separator - string or character that separate elements
 // - textDelimiter - string that is used as text delimiter
+// - stripSpaces - when true, will strip leading and trailing spaces from elements
 // @output:
 // - QStringList - list of elements
 QStringList ReaderPrivate::splitElements(const QString& line,
                                             const QString& separator,
                                             const QString& textDelimiter,
-                                            ElementInfo& elemInfo)
+                                            ElementInfo& elemInfo,
+                                            bool stripSpaces)
 {
     // If separator is empty, return whole line. Can't work in this
     // conditions!
@@ -342,7 +349,7 @@ QStringList ReaderPrivate::splitElements(const QString& line,
         }
     }
 
-    removeExtraSymbols(result, textDelimiter);
+    removeExtraSymbols(result, textDelimiter, stripSpaces);
     return result;
 }
 
@@ -473,8 +480,10 @@ bool ReaderPrivate::isElementLast(const QString& str,
 // @input:
 // - elements - list of row elements
 // - textDelimiter - string that is used as text delimiter
+// - stripSpaces - when true, will strip leading and trailing spaces from elements
 void ReaderPrivate::removeExtraSymbols(QStringList& elements,
-                                       const QString& textDelimiter)
+                                       const QString& textDelimiter,
+                                       bool stripSpaces)
 {
     if (elements.isEmpty())
     {
@@ -487,17 +496,20 @@ void ReaderPrivate::removeExtraSymbols(QStringList& elements,
         QStringRef str(&elements.at(i));
         int startPos = 0, endPos = str.size() - 1;
 
-        // Find first non-space char
-        for (;
-             startPos < str.size() &&
-                 str.at(startPos).category() == QChar::Separator_Space;
-             ++startPos);
+        if (stripSpaces)
+        {
+            // Find first non-space char
+            for (;
+                 startPos < str.size() &&
+                     str.at(startPos).category() == QChar::Separator_Space;
+                 ++startPos);
 
-        // Find last non-space char
-        for (;
-             endPos >= 0 &&
-                 str.at(endPos).category() == QChar::Separator_Space;
-             --endPos);
+            // Find last non-space char
+            for (;
+                 endPos >= 0 &&
+                     str.at(endPos).category() == QChar::Separator_Space;
+                 --endPos);
+        }
 
         if (false == textDelimiter.isEmpty())
         {
@@ -546,13 +558,15 @@ public:
 // - separator - string or character that separate elements in a row
 // - textDelimiter - string or character that enclose each element in a row
 // - codec - pointer to codec object that would be used for file reading
+// - stripSpaces - when true, will strip leading and trailing spaces from elements
 // @output:
 // - QList<QStringList> - list of values (as strings) from csv-file. In case of
 // error will return empty QList<QStringList>.
 QList<QStringList> Reader::readToList(const QString& filePath,
                                       const QString& separator,
                                       const QString& textDelimiter,
-                                      QTextCodec* codec)
+                                      QTextCodec* codec,
+                                      bool stripSpaces)
 {
     QFile file;
     if (false == openFile(filePath, file))
@@ -565,13 +579,14 @@ QList<QStringList> Reader::readToList(const QString& filePath,
 
 // Read csv-formatted data from IO Device and save it
 // as strings to QList<QStringList>
-QList<QStringList> Reader::readToList(QIODevice &ioDevice,
-                                      const QString &separator,
-                                      const QString &textDelimiter,
-                                      QTextCodec *codec)
+QList<QStringList> Reader::readToList(QIODevice& ioDevice,
+                                      const QString& separator,
+                                      const QString& textDelimiter,
+                                      QTextCodec* codec,
+                                      bool stripSpaces)
 {
     ReadToListProcessor processor;
-    ReaderPrivate::read(ioDevice, processor, separator, textDelimiter, codec);
+    ReaderPrivate::read(ioDevice, processor, separator, textDelimiter, codec, stripSpaces);
     return processor.data;
 }
 
@@ -582,13 +597,15 @@ QList<QStringList> Reader::readToList(QIODevice &ioDevice,
 // - separator - string or character that separate elements in a row
 // - textDelimiter - string or character that enclose each element in a row
 // - codec - pointer to codec object that would be used for file reading
+// - stripSpaces - when true, will strip leading and trailing spaces from elements
 // @output:
 // - bool - True if file was successfully read, otherwise False
 bool Reader::readToData(const QString& filePath,
                         AbstractData& data,
                         const QString& separator,
                         const QString& textDelimiter,
-                        QTextCodec* codec)
+                        QTextCodec* codec,
+                        bool stripSpaces)
 {
     QFile file;
     if (false == openFile(filePath, file))
@@ -596,7 +613,7 @@ bool Reader::readToData(const QString& filePath,
         return false;
     }
 
-    return readToData(file, data, separator, textDelimiter, codec);
+    return readToData(file, data, separator, textDelimiter, codec, stripSpaces);
 }
 
 // Read csv-formatted data from IO Device and save it
@@ -605,11 +622,12 @@ bool Reader::readToData(QIODevice& ioDevice,
                         AbstractData& data,
                         const QString& separator,
                         const QString& textDelimiter,
-                        QTextCodec* codec)
+                        QTextCodec* codec,
+                        bool stripSpaces)
 {
     ReadToListProcessor processor;
     if (false == ReaderPrivate::read(
-                ioDevice, processor, separator, textDelimiter, codec))
+                ioDevice, processor, separator, textDelimiter, codec, stripSpaces))
     {
         return false;
     }
@@ -630,13 +648,15 @@ bool Reader::readToData(QIODevice& ioDevice,
 // - separator - string or character that separate elements in a row
 // - textDelimiter - string or character that enclose each element in a row
 // - codec - pointer to codec object that would be used for file reading
+// - stripSpaces - when true, will strip leading and trailing spaces from elements
 // @output:
 // - bool - True if file was successfully read, otherwise False
 bool Reader::readToProcessor(const QString& filePath,
                              Reader::AbstractProcessor& processor,
                              const QString& separator,
                              const QString& textDelimiter,
-                             QTextCodec* codec)
+                             QTextCodec* codec,
+                             bool stripSpaces)
 {
     QFile file;
     if (false == openFile(filePath, file))
@@ -644,7 +664,7 @@ bool Reader::readToProcessor(const QString& filePath,
         return false;
     }
 
-    return readToProcessor(file, processor, separator, textDelimiter, codec);
+    return readToProcessor(file, processor, separator, textDelimiter, codec, stripSpaces);
 }
 
 // Read csv-formatted data from IO Device and process it line-by-line
@@ -652,8 +672,9 @@ bool Reader::readToProcessor(QIODevice& ioDevice,
                              Reader::AbstractProcessor& processor,
                              const QString& separator,
                              const QString& textDelimiter,
-                             QTextCodec* codec)
+                             QTextCodec* codec,
+                             bool stripSpaces)
 {
     return ReaderPrivate::read(
-                ioDevice, processor, separator, textDelimiter, codec);
+                ioDevice, processor, separator, textDelimiter, codec, stripSpaces);
 }

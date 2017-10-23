@@ -63,14 +63,16 @@ namespace QtCSV
         static QList<QStringList> readToList(const QString& filePath,
                         const QString& separator = QString(","),
                         const QString& textDelimiter = QString("\""),
-                        QTextCodec* codec = QTextCodec::codecForName("UTF-8"));
+                        QTextCodec* codec = QTextCodec::codecForName("UTF-8"),
+                        bool stripSpaces = true);
 
         // Read csv-formatted data from IO Device and save it
         // as strings to QList<QStringList>
         static QList<QStringList> readToList(QIODevice& ioDevice,
                         const QString& separator = QString(","),
                         const QString& textDelimiter = QString("\""),
-                        QTextCodec* codec = QTextCodec::codecForName("UTF-8"));
+                        QTextCodec* codec = QTextCodec::codecForName("UTF-8"),
+                        bool stripSpaces = true);
 
         // Read csv-file and save it's data to AbstractData-based container
         // class
@@ -78,7 +80,8 @@ namespace QtCSV
                         AbstractData& data,
                         const QString& separator = QString(","),
                         const QString& textDelimiter = QString("\""),
-                        QTextCodec* codec = QTextCodec::codecForName("UTF-8"));
+                        QTextCodec* codec = QTextCodec::codecForName("UTF-8"),
+                        bool stripSpaces = true);
 
         // Read csv-formatted data from IO Device and save it
         // to AbstractData-based container class
@@ -86,21 +89,24 @@ namespace QtCSV
                         AbstractData& data,
                         const QString& separator = QString(","),
                         const QString& textDelimiter = QString("\""),
-                        QTextCodec* codec = QTextCodec::codecForName("UTF-8"));
+                        QTextCodec* codec = QTextCodec::codecForName("UTF-8"),
+                        bool stripSpaces = true);
 
         // Read csv-file and process it line-by-line
         static bool readToProcessor(const QString& filePath,
                         AbstractProcessor& processor,
                         const QString& separator = QString(","),
                         const QString& textDelimiter = QString("\""),
-                        QTextCodec* codec = QTextCodec::codecForName("UTF-8"));
+                        QTextCodec* codec = QTextCodec::codecForName("UTF-8"),
+                        bool stripSpaces = true);
 
         // Read csv-formatted data from IO Device and process it line-by-line
         static bool readToProcessor(QIODevice& ioDevice,
                         AbstractProcessor& processor,
                         const QString& separator = QString(","),
                         const QString& textDelimiter = QString("\""),
-                        QTextCodec* codec = QTextCodec::codecForName("UTF-8"));
+                        QTextCodec* codec = QTextCodec::codecForName("UTF-8"),
+                        bool stripSpaces = true);
     };
 }
 
