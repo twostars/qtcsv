@@ -7,6 +7,7 @@
 #include <QTextStream>
 #include <QCoreApplication>
 #include <QDebug>
+#include <qrandom.h>
 
 #include "include/qtcsv/abstractdata.h"
 #include "sources/filechecker.h"
@@ -178,9 +179,16 @@ QString WriterPrivate::getTempFileName()
     QString nameTemplate = QDir::tempPath() + "/qtcsv_" +
                 QString::number(QCoreApplication::applicationPid()) + "_%1.csv";
 
+#if QT_DEPRECATED_SINCE(5, 15)
+    QRandomGenerator gen;
+#endif
     for (int counter = 0; counter < std::numeric_limits<int>::max(); ++counter)
     {
+#if QT_DEPRECATED_SINCE(5, 15)
+        QString name = nameTemplate.arg(QString::number(gen.generate()));
+#else
         QString name = nameTemplate.arg(QString::number(qrand()));
+#endif
         if ( false == QFile::exists(name) )
         {
             return name;
